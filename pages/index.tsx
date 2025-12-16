@@ -5,7 +5,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/rakeback/player');
+    router.push('/player/rakeback');
   }, [router]);
 
   return (

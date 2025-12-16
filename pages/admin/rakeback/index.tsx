@@ -113,7 +113,7 @@ export default function RakebackAdminPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Rakeback Configuration</h1>
-          <p className="mt-2 text-sm text-gray-600">Configure rakeback calculation settings</p>
+          <p className="mt-2 text-sm text-gray-600">Configure rakeback calculation parameters</p>
         </div>
 
         <div className="bg-white shadow rounded-lg p-6 space-y-6">
@@ -169,7 +169,7 @@ export default function RakebackAdminPage() {
           {/* Casino RTP Floors */}
           <div className="border-t pt-4">
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Casino RTP Floors (per category)
+              Casino House Edge Floors (per category)
             </label>
             <div className="grid grid-cols-2 gap-4">
               {CASINO_CATEGORIES.map((category) => (

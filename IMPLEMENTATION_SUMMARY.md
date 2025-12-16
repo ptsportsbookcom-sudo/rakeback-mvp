@@ -71,10 +71,9 @@ All API routes created in `pages/api/`:
 
 ### Integration
 
-- ✅ No breaking changes to existing Achievements module
-- ✅ Follows same architectural pattern
-- ✅ Uses same UI framework (Tailwind, Next.js)
-- ✅ Added navigation links to admin/player layouts
+- ✅ Standalone Rakeback product
+- ✅ Uses Next.js pages router with Tailwind CSS
+- ✅ Vercel-compatible serverless architecture
 
 ## 🚀 Deployment
 

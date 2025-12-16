@@ -1,10 +1,39 @@
 // Rakeback Types
 
-export type StakeSourceType = 'REAL_CASH' | 'CLEARED_CASH' | 'BONUS' | 'FREE_BET' | 'PROMO_BALANCE';
-export type ProductType = 'CASINO' | 'SPORTS';
-export type CasinoCategory = 'SLOTS' | 'LIVE' | 'TABLE' | 'CRASH' | 'OTHER';
-export type SportType = 'FOOTBALL' | 'TENNIS' | 'BASKETBALL' | 'ESPORTS' | 'OTHER';
-export type BetStatus = 'SETTLED' | 'UNSETTLED' | 'VOID';
+export enum StakeSourceType {
+  REAL_CASH = 'REAL_CASH',
+  CLEARED_CASH = 'CLEARED_CASH',
+  BONUS = 'BONUS',
+  FREE_BET = 'FREE_BET',
+  PROMO_BALANCE = 'PROMO_BALANCE',
+}
+
+export enum ProductType {
+  CASINO = 'CASINO',
+  SPORTS = 'SPORTS',
+}
+
+export enum CasinoCategory {
+  SLOTS = 'SLOTS',
+  LIVE = 'LIVE',
+  TABLE = 'TABLE',
+  CRASH = 'CRASH',
+  OTHER = 'OTHER',
+}
+
+export enum SportType {
+  FOOTBALL = 'FOOTBALL',
+  TENNIS = 'TENNIS',
+  BASKETBALL = 'BASKETBALL',
+  ESPORTS = 'ESPORTS',
+  OTHER = 'OTHER',
+}
+
+export enum BetStatus {
+  SETTLED = 'SETTLED',
+  UNSETTLED = 'UNSETTLED',
+  VOID = 'VOID',
+}
 
 export interface Wager {
   id: string;
@@ -30,7 +59,7 @@ export interface RakebackConfig {
   // Sportsbook margins
   globalMargin: number; // Global default margin (e.g., 0.08 = 8%)
   sportMarginFloors: Record<SportType, number>; // Per-sport margin floors
-  sportMarginOverrides: Record<SportType, number>; // Per-sport margin overrides
+  sportMarginOverrides: Partial<Record<SportType, number>>; // Per-sport margin overrides
   lastUpdated: string;
   lastUpdatedBy?: string;
 }

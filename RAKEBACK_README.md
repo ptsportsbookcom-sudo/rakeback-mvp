@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Rakeback MVP has been implemented as a Vercel serverless application, following the same architectural pattern as the existing Achievements module. All backend logic is implemented using Vercel API routes (`/api`), and the system is designed to work immediately after deployment without any manual setup.
+The Rakeback MVP has been implemented as a Vercel serverless application. All backend logic is implemented using Vercel API routes (`/api`), and the system is designed to work immediately after deployment without any manual setup.
 
 ## Architecture
 
@@ -207,10 +207,10 @@ To upgrade from in-memory to persistent storage:
 - Config changes apply from timestamp onward
 - Claim resets accrued rakeback to zero
 
-## Integration with Existing Code
+## Architecture
 
-The rakeback module is completely separate from the Achievements module:
-- No breaking changes to existing code
-- Uses same UI patterns (Tailwind, Next.js)
-- Follows same architectural approach (API routes + frontend)
+This is a standalone Rakeback product:
+- Next.js pages router with Tailwind CSS
+- Vercel-compatible serverless architecture
+- In-memory storage (upgradeable to Vercel KV or database)
 
