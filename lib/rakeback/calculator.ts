@@ -18,23 +18,17 @@ export function calculateCasinoHouseEdge(
 }
 
 /**
- * Calculate effective house edge for sports wager
+ * Calculate effective margin for sports wager
+ * Formula: max(Reported Market Margin, Sport Margin Floor)
  */
-export function calculateSportsHouseEdge(
+export function calculateSportsEffectiveMargin(
+  reportedMargin: number,
   sport: string,
-  globalMargin: number,
-  sportMarginFloors: Record<string, number>,
-  sportMarginOverrides: Record<string, number>
+  sportMarginFloors: Record<string, number>
 ): number {
   const sportFloor = sportMarginFloors[sport] || 0;
-  const sportOverride = sportMarginOverrides[sport];
-  const global = globalMargin || 0.08; // Default 0.08
-
-  if (sportOverride !== undefined) {
-    return sportOverride;
-  }
-
-  return Math.max(global, sportFloor);
+  // Effective Margin = max(Reported Market Margin, Sport Margin Floor)
+  return Math.max(reportedMargin, sportFloor);
 }
 
 /**
@@ -49,6 +43,8 @@ export function isEligibleWager(wager: Wager): boolean {
 
 /**
  * Calculate rakeback for a player based on their wagers
+ * Formula: Rakeback = Wager × Effective Edge × Base Rakeback % × Override %
+ * Applied per wager and summed
  */
 export function calculatePlayerRakeback(
   wagers: Wager[],
@@ -69,6 +65,7 @@ export function calculatePlayerRakeback(
   let totalWager = 0;
   let casinoWager = 0;
   let sportsWager = 0;
+  let totalRakeback = 0;
   let weightedHE = 0;
   let totalWeightedHE = 0;
 
@@ -76,48 +73,48 @@ export function calculatePlayerRakeback(
   for (const wager of eligibleWagers) {
     totalWager += wager.amount;
 
-    let effectiveHE = 0;
+    let effectiveEdge = 0;
 
     if (wager.productType === ProductType.CASINO) {
       casinoWager += wager.amount;
       if (!wager.rtp || !wager.casinoCategory) {
         continue; // Skip invalid casino wagers
       }
-      effectiveHE = calculateCasinoHouseEdge(
+      // Effective Edge = max(1 - RTP, Casino HE Floor)
+      effectiveEdge = calculateCasinoHouseEdge(
         wager.rtp,
         wager.casinoCategory,
         config.casinoRtpFloors
       );
     } else if (wager.productType === ProductType.SPORTS) {
       sportsWager += wager.amount;
-      if (!wager.sport) {
+      if (!wager.sport || wager.margin === undefined) {
         continue; // Skip invalid sports wagers
       }
-      effectiveHE = calculateSportsHouseEdge(
+      // Effective Margin = max(Reported Market Margin, Sport Margin Floor)
+      effectiveEdge = calculateSportsEffectiveMargin(
+        wager.margin,
         wager.sport,
-        config.globalMargin,
-        config.sportMarginFloors,
-        config.sportMarginOverrides
+        config.sportMarginFloors
       );
     }
 
-    // Weighted calculation: wager × effectiveHE
-    weightedHE += wager.amount * effectiveHE;
+    // Calculate rakeback per wager: Wager × Effective Edge × Base % × Override %
+    const baseRakebackPct = config.rakebackPercentage / 100; // Convert % to decimal
+    const overrideMultiplier = config.overridePercentage / 100; // Convert % to decimal
+    const wagerRakeback = wager.amount * effectiveEdge * baseRakebackPct * overrideMultiplier;
+    totalRakeback += wagerRakeback;
+
+    // Track weighted HE for average calculation (for display purposes)
+    weightedHE += wager.amount * effectiveEdge;
     totalWeightedHE += wager.amount;
   }
 
-  // Calculate average effective HE
+  // Calculate average effective HE (for display purposes)
   const avgEffectiveHE = totalWeightedHE > 0 ? weightedHE / totalWeightedHE : 0;
 
-  // Calculate rakeback: Wager × House Edge × RBP × Override
-  const rakebackAmount =
-    totalWager *
-    avgEffectiveHE *
-    (config.rakebackPercentage / 100) *
-    (config.overridePercentage / 100);
-
   // Round to 2 decimals
-  const accruedRakeback = Math.round(rakebackAmount * 100) / 100;
+  const accruedRakeback = Math.round(totalRakeback * 100) / 100;
 
   // Get playerId from wagers (should all be same player)
   const playerId = eligibleWagers.length > 0 ? eligibleWagers[0].playerId : '';

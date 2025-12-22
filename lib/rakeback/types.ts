@@ -47,6 +47,7 @@ export interface Wager {
   rtp?: number; // RTP value (decimal, e.g., 0.95 = 95%)
   // Sports-specific
   sport?: SportType;
+  margin?: number; // Reported market margin (decimal, e.g., 0.08 = 8%)
   betStatus?: BetStatus;
 }
 

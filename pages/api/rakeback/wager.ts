@@ -17,6 +17,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       casinoCategory,
       rtp,
       sport,
+      margin,
       betStatus,
     } = req.body;
 
@@ -29,8 +30,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Casino wagers require category and rtp' });
     }
 
-    if (productType === 'SPORTS' && !sport) {
-      return res.status(400).json({ error: 'Sports wagers require sport' });
+    if (productType === 'SPORTS' && (!sport || margin === undefined)) {
+      return res.status(400).json({ error: 'Sports wagers require sport and margin' });
     }
 
     // Create wager
@@ -44,6 +45,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       casinoCategory,
       rtp: rtp ? parseFloat(rtp) : undefined,
       sport,
+      margin: margin !== undefined ? parseFloat(margin) : undefined,
       betStatus,
     };
 

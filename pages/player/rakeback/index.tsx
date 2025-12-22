@@ -21,13 +21,37 @@ export default function PlayerRakebackPage() {
   const [status, setStatus] = useState<RakebackStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
-  const [playerId] = useState('player-1'); // In real app, get from auth/session
+  const [playerId, setPlayerId] = useState('player1');
+  const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
 
   useEffect(() => {
-    loadStatus();
-    const interval = setInterval(loadStatus, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
+    loadAvailablePlayers();
   }, []);
+
+  useEffect(() => {
+    if (playerId) {
+      loadStatus();
+      const interval = setInterval(loadStatus, 30000); // Refresh every 30s
+      return () => clearInterval(interval);
+    }
+  }, [playerId]);
+
+  const loadAvailablePlayers = async () => {
+    try {
+      const response = await fetch('/api/admin/players');
+      if (response.ok) {
+        const data = await response.json();
+        const playerIds = data.map((p: any) => p.playerId);
+        setAvailablePlayers(playerIds);
+        // Set default player if available
+        if (playerIds.length > 0 && !playerIds.includes(playerId)) {
+          setPlayerId(playerIds[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load players:', error);
+    }
+  };
 
   const loadStatus = async () => {
     try {
@@ -112,8 +136,26 @@ export default function PlayerRakebackPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Rakeback</h1>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-700">Player ID:</label>
+            <select
+              value={playerId}
+              onChange={(e) => setPlayerId(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {availablePlayers.length > 0 ? (
+                availablePlayers.map((pid) => (
+                  <option key={pid} value={pid}>
+                    {pid}
+                  </option>
+                ))
+              ) : (
+                <option value={playerId}>{playerId}</option>
+              )}
+            </select>
+          </div>
         </div>
 
         {/* Main Metrics */}
@@ -192,7 +234,7 @@ export default function PlayerRakebackPage() {
         {/* Wager Breakdown */}
         <div className="bg-white border border-gray-200 rounded">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Wager Breakdown</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Breakdown</h2>
           </div>
           <div className="p-6">
             <div className="space-y-4">
@@ -208,8 +250,20 @@ export default function PlayerRakebackPage() {
                   ${rakeback.sportsWager.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-600">Effective Edge</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {(rakeback.effectiveHouseEdge * 100).toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-600">Base Rakeback %</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {config.rakebackPercentage}%
+                </span>
+              </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-600">Override Percentage</span>
+                <span className="text-sm text-gray-600">Override %</span>
                 <span className="text-sm font-medium text-gray-900">
                   {config.overridePercentage}%
                 </span>
