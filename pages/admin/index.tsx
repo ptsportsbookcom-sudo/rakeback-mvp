@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import type { RakebackConfig } from "@/lib/types";
+import type {
+  CasinoCategory,
+  CasinoEdgeCapConfig,
+  RakebackConfig,
+  SportEdgeCapConfig,
+  SportType,
+} from "@/lib/types";
+
+const casinoCategories: CasinoCategory[] = ["slots", "table", "live", "other"];
+const sportTypes: SportType[] = ["soccer", "basketball", "tennis", "other"];
 
 interface ConfigState {
   loading: boolean;
@@ -87,25 +96,41 @@ export default function AdminConfigPage() {
     updateConfigField("overrideMultiplier", parsed);
   };
 
-  const handleCasinoEdgeCapChange = (value: string) => {
+  const handleCasinoEdgeCapChange = (
+    category: CasinoCategory,
+    value: string,
+  ): void => {
     if (!state.config) return;
     const parsed = Number.parseFloat(value);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      updateConfigField("casinoEdgeCap", 0);
-      return;
-    }
-    // UI is percentage (e.g. 10), config stores decimal (0.10)
-    updateConfigField("casinoEdgeCap", parsed / 100);
+    const cap = !Number.isFinite(parsed) || parsed < 0 ? 0 : parsed / 100;
+
+    const updated: CasinoEdgeCapConfig[] = casinoCategories.map((cat) => {
+      const existing =
+        state.config?.casinoEdgeCaps.find((c) => c.category === cat) ?? null;
+      if (cat === category) {
+        return { category: cat, cap };
+      }
+      return existing ?? { category: cat, cap: 0 };
+    });
+
+    updateConfigField("casinoEdgeCaps", updated);
   };
 
-  const handleSportsEdgeCapChange = (value: string) => {
+  const handleSportEdgeCapChange = (sport: SportType, value: string): void => {
     if (!state.config) return;
     const parsed = Number.parseFloat(value);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      updateConfigField("sportsEdgeCap", 0);
-      return;
-    }
-    updateConfigField("sportsEdgeCap", parsed / 100);
+    const cap = !Number.isFinite(parsed) || parsed < 0 ? 0 : parsed / 100;
+
+    const updated: SportEdgeCapConfig[] = sportTypes.map((sp) => {
+      const existing =
+        state.config?.sportEdgeCaps.find((s) => s.sport === sp) ?? null;
+      if (sp === sport) {
+        return { sport: sp, cap };
+      }
+      return existing ?? { sport: sp, cap: 0 };
+    });
+
+    updateConfigField("sportEdgeCaps", updated);
   };
 
   const handleSave = async () => {
@@ -144,14 +169,6 @@ export default function AdminConfigPage() {
 
   const overrideMultiplierDisplay = state.config
     ? state.config.overrideMultiplier.toString()
-    : "";
-
-  const casinoEdgeCapDisplay = state.config
-    ? (state.config.casinoEdgeCap * 100).toString()
-    : "";
-
-  const sportsEdgeCapDisplay = state.config
-    ? (state.config.sportsEdgeCap * 100).toString()
     : "";
 
   return (
@@ -263,43 +280,6 @@ export default function AdminConfigPage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                    Casino Edge Cap (Max Edge Used for Rakeback)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={casinoEdgeCapDisplay}
-                    onChange={(e) => handleCasinoEdgeCapChange(e.target.value)}
-                    className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm outline-none ring-0 focus:border-emerald-500"
-                  />
-                  <p className="text-xs text-neutral-500">
-                    Maximum edge used for rakeback to prevent overpaying on
-                    high-margin bets.
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                    Sportsbook Edge Cap (Max Margin Used for Rakeback)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={sportsEdgeCapDisplay}
-                    onChange={(e) => handleSportsEdgeCapChange(e.target.value)}
-                    className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm outline-none ring-0 focus:border-emerald-500"
-                  />
-                  <p className="text-xs text-neutral-500">
-                    Maximum margin used for rakeback to prevent overpaying on
-                    high-margin bets.
-                  </p>
-                </div>
-              </div>
-
               <div className="mt-2 text-xs text-neutral-500">
                 Last updated:{" "}
                 <span className="font-mono">
@@ -317,7 +297,90 @@ export default function AdminConfigPage() {
               </button>
             </section>
 
-            {/* Right column intentionally left simple for now; floors removed. */}
+            <section className="space-y-5 rounded-lg border border-neutral-800 bg-neutral-900/60 p-5">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
+                Edge Caps
+              </h2>
+
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Casino Edge Caps (per category)
+                </h3>
+                <div className="space-y-2 rounded-md border border-neutral-800 bg-neutral-950/40 p-3">
+                  {casinoCategories.map((category) => {
+                    const existing =
+                      state.config?.casinoEdgeCaps.find(
+                        (c) => c.category === category,
+                      ) ?? null;
+                    const percent = existing ? existing.cap * 100 : 0;
+                    return (
+                      <div
+                        key={category}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="text-xs font-medium capitalize text-neutral-200">
+                          {category}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={percent.toString()}
+                            onChange={(e) =>
+                              handleCasinoEdgeCapChange(
+                                category,
+                                e.target.value,
+                              )
+                            }
+                            className="w-24 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-right text-xs outline-none focus:border-emerald-500"
+                          />
+                          <span className="text-xs text-neutral-400">%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Sports Edge Caps (per sport)
+                </h3>
+                <div className="space-y-2 rounded-md border border-neutral-800 bg-neutral-950/40 p-3">
+                  {sportTypes.map((sport) => {
+                    const existing =
+                      state.config?.sportEdgeCaps.find(
+                        (s) => s.sport === sport,
+                      ) ?? null;
+                    const percent = existing ? existing.cap * 100 : 0;
+                    return (
+                      <div
+                        key={sport}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="text-xs font-medium capitalize text-neutral-200">
+                          {sport}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={percent.toString()}
+                            onChange={(e) =>
+                              handleSportEdgeCapChange(sport, e.target.value)
+                            }
+                            className="w-24 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-right text-xs outline-none focus:border-emerald-500"
+                          />
+                          <span className="text-xs text-neutral-400">%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
           </main>
         )}
       </div>

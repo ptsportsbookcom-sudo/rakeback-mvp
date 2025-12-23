@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { store } from "@/lib/store";
-import type { RakebackConfig } from "@/lib/types";
+import type {
+  CasinoEdgeCapConfig,
+  RakebackConfig,
+  SportEdgeCapConfig,
+} from "@/lib/types";
 import { createAuditLogEntry } from "@/lib/rakeback";
 
 type ConfigResponse = {
@@ -15,8 +19,8 @@ type UpdateConfigBody = {
   enabled?: boolean;
   baseRakebackPercentage?: number;
   overrideMultiplier?: number;
-  casinoEdgeCap?: number;
-  sportsEdgeCap?: number;
+  casinoEdgeCaps?: CasinoEdgeCapConfig[];
+  sportEdgeCaps?: SportEdgeCapConfig[];
 };
 
 export default function handler(
@@ -53,22 +57,19 @@ export default function handler(
         store.config.overrideMultiplier = body.overrideMultiplier;
       }
 
-      if (typeof body.casinoEdgeCap === "number") {
-        if (body.casinoEdgeCap < 0) {
-          return res
-            .status(400)
-            .json({ error: "casinoEdgeCap must be non-negative" });
-        }
-        store.config.casinoEdgeCap = body.casinoEdgeCap;
+      if (Array.isArray(body.casinoEdgeCaps)) {
+        // Ensure non-negative caps.
+        store.config.casinoEdgeCaps = body.casinoEdgeCaps.map((entry) => ({
+          ...entry,
+          cap: entry.cap < 0 ? 0 : entry.cap,
+        }));
       }
 
-      if (typeof body.sportsEdgeCap === "number") {
-        if (body.sportsEdgeCap < 0) {
-          return res
-            .status(400)
-            .json({ error: "sportsEdgeCap must be non-negative" });
-        }
-        store.config.sportsEdgeCap = body.sportsEdgeCap;
+      if (Array.isArray(body.sportEdgeCaps)) {
+        store.config.sportEdgeCaps = body.sportEdgeCaps.map((entry) => ({
+          ...entry,
+          cap: entry.cap < 0 ? 0 : entry.cap,
+        }));
       }
 
       store.config.updatedAt = updatedAt;

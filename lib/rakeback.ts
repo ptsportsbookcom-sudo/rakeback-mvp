@@ -2,8 +2,10 @@ import {
   AuditLogEntry,
   BetType,
   CasinoCategory,
+  CasinoEdgeCapConfig,
   RakebackBreakdown,
   RakebackConfig,
+  SportEdgeCapConfig,
   SportType,
   Wager,
 } from "./types";
@@ -12,20 +14,38 @@ const generateId = (): string => {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+const findCasinoEdgeCap = (
+  category: CasinoCategory,
+  caps: CasinoEdgeCapConfig[],
+): number => {
+  const match = caps.find((c) => c.category === category);
+  return match ? match.cap : 0;
+};
+
+const findSportEdgeCap = (
+  sport: SportType,
+  caps: SportEdgeCapConfig[],
+): number => {
+  const match = caps.find((c) => c.sport === sport);
+  return match ? match.cap : 0;
+};
+
 export const getCasinoEffectiveEdge = (
   rtp: number,
+  category: CasinoCategory,
   config: RakebackConfig,
 ): number => {
   const actualEdge = 1 - rtp;
-  const cap = config.casinoEdgeCap;
+  const cap = findCasinoEdgeCap(category, config.casinoEdgeCaps);
   return Math.min(actualEdge, cap);
 };
 
 export const getSportsEffectiveEdge = (
   marketMargin: number,
+  sport: SportType,
   config: RakebackConfig,
 ): number => {
-  const cap = config.sportsEdgeCap;
+  const cap = findSportEdgeCap(sport, config.sportEdgeCaps);
   return Math.min(marketMargin, cap);
 };
 
@@ -47,7 +67,8 @@ export const calculateCasinoRakeback = (params: {
 }): RakebackBreakdown => {
   const { wager, rtp, category, config } = params;
   const actualEdge = 1 - rtp;
-  const effectiveEdge = getCasinoEffectiveEdge(rtp, config);
+  const cap = findCasinoEdgeCap(category, config.casinoEdgeCaps);
+  const effectiveEdge = Math.min(actualEdge, cap);
   const amount = calculateRakebackAmount(
     wager,
     effectiveEdge,
@@ -64,7 +85,7 @@ export const calculateCasinoRakeback = (params: {
     rakebackAmount: amount,
     rtp,
     actualEdge,
-    casinoEdgeCap: config.casinoEdgeCap,
+    casinoEdgeCap: cap,
     category,
   };
 };
@@ -76,7 +97,8 @@ export const calculateSportsRakeback = (params: {
   config: RakebackConfig;
 }): RakebackBreakdown => {
   const { wager, marketMargin, sport, config } = params;
-  const effectiveEdge = getSportsEffectiveEdge(marketMargin, config);
+  const cap = findSportEdgeCap(sport, config.sportEdgeCaps);
+  const effectiveEdge = Math.min(marketMargin, cap);
   const amount = calculateRakebackAmount(
     wager,
     effectiveEdge,
@@ -92,7 +114,7 @@ export const calculateSportsRakeback = (params: {
     overrideMultiplier: config.overrideMultiplier,
     rakebackAmount: amount,
     marketMargin,
-    sportsEdgeCap: config.sportsEdgeCap,
+    sportsEdgeCap: cap,
     sport,
   };
 };

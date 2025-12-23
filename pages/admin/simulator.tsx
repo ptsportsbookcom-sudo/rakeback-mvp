@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  calculateRakebackAmount,
-  getCasinoEffectiveEdge,
-  getSportsEffectiveEdge,
-} from "@/lib/rakeback";
+import { calculateRakebackAmount } from "@/lib/rakeback";
 import type {
   BetType,
   CasinoCategory,
@@ -98,8 +94,12 @@ export default function SimulatorPage() {
         return null;
       }
       const actualEdge = 1 - numericRtp;
-      const cap = state.config.casinoEdgeCap;
-      const effectiveEdge = getCasinoEffectiveEdge(numericRtp, state.config);
+      const categoryCapEntry =
+        state.config.casinoEdgeCaps.find(
+          (c) => c.category === casinoCategory,
+        ) ?? null;
+      const cap = categoryCapEntry ? categoryCapEntry.cap : 0;
+      const effectiveEdge = Math.min(actualEdge, cap);
       const rakeback = calculateRakebackAmount(
         numericWager,
         effectiveEdge,
@@ -120,8 +120,10 @@ export default function SimulatorPage() {
     }
 
     const actualMargin = numericMargin;
-    const cap = state.config.sportsEdgeCap;
-    const effectiveEdge = getSportsEffectiveEdge(numericMargin, state.config);
+    const sportCapEntry =
+      state.config.sportEdgeCaps.find((c) => c.sport === sport) ?? null;
+    const cap = sportCapEntry ? sportCapEntry.cap : 0;
+    const effectiveEdge = Math.min(actualMargin, cap);
     const rakeback = calculateRakebackAmount(
       numericWager,
       effectiveEdge,

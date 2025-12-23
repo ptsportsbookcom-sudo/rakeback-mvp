@@ -4,6 +4,24 @@ export type CasinoCategory = "slots" | "table" | "live" | "other";
 
 export type SportType = "soccer" | "basketball" | "tennis" | "other";
 
+export interface CasinoEdgeCapConfig {
+  category: CasinoCategory;
+  /**
+   * Maximum house edge (margin) for this casino category, expressed as a decimal.
+   * Example: 0.10 for 10%.
+   */
+  cap: number;
+}
+
+export interface SportEdgeCapConfig {
+  sport: SportType;
+  /**
+   * Maximum market margin for this sport, expressed as a decimal.
+   * Example: 0.08 for 8%.
+   */
+  cap: number;
+}
+
 export interface RakebackConfig {
   enabled: boolean;
   /**
@@ -17,15 +35,13 @@ export interface RakebackConfig {
    */
   overrideMultiplier: number;
   /**
-   * Maximum casino edge (1 - RTP) used for rakeback, expressed as a decimal.
-   * Example: 0.10 for 10%.
+   * Per-category maximum casino edge (1 - RTP) used for rakeback.
    */
-  casinoEdgeCap: number;
+  casinoEdgeCaps: CasinoEdgeCapConfig[];
   /**
-   * Maximum sportsbook market margin used for rakeback, expressed as a decimal.
-   * Example: 0.08 for 8%.
+   * Per-sport maximum sportsbook margin used for rakeback.
    */
-  sportsEdgeCap: number;
+  sportEdgeCaps: SportEdgeCapConfig[];
   updatedAt: string;
 }
 
