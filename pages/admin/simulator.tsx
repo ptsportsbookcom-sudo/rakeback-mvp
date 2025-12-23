@@ -97,11 +97,9 @@ export default function SimulatorPage() {
       if (numericRtp <= 0 || numericRtp >= 1) {
         return null;
       }
-      const effectiveEdge = getCasinoEffectiveEdge(
-        numericRtp,
-        casinoCategory,
-        state.config,
-      );
+      const actualEdge = 1 - numericRtp;
+      const cap = state.config.casinoEdgeCap;
+      const effectiveEdge = getCasinoEffectiveEdge(numericRtp, state.config);
       const rakeback = calculateRakebackAmount(
         numericWager,
         effectiveEdge,
@@ -110,6 +108,8 @@ export default function SimulatorPage() {
       );
       return {
         betType: "casino" as const,
+        actualEdge,
+        cap,
         effectiveEdge,
         rakeback,
       };
@@ -119,11 +119,9 @@ export default function SimulatorPage() {
       return null;
     }
 
-    const effectiveEdge = getSportsEffectiveEdge(
-      numericMargin,
-      sport,
-      state.config,
-    );
+    const actualMargin = numericMargin;
+    const cap = state.config.sportsEdgeCap;
+    const effectiveEdge = getSportsEffectiveEdge(numericMargin, state.config);
     const rakeback = calculateRakebackAmount(
       numericWager,
       effectiveEdge,
@@ -132,18 +130,12 @@ export default function SimulatorPage() {
     );
     return {
       betType: "sports" as const,
+      actualMargin,
+      cap,
       effectiveEdge,
       rakeback,
     };
-  }, [
-    state.config,
-    numericWager,
-    numericRtp,
-    numericMargin,
-    mode,
-    casinoCategory,
-    sport,
-  ]);
+  }, [state.config, numericWager, numericRtp, numericMargin, mode]);
 
   const handlePlaceBet = async () => {
     if (!state.config) return;
@@ -209,6 +201,19 @@ export default function SimulatorPage() {
 
   const rakebackDisplay =
     preview !== null ? preview.rakeback.toFixed(4) : undefined;
+
+  const casinoActualEdgePercent =
+    preview !== null && preview.betType === "casino"
+      ? (preview.actualEdge * 100).toFixed(3)
+      : null;
+
+  const sportsActualMarginPercent =
+    preview !== null && preview.betType === "sports"
+      ? (preview.actualMargin * 100).toFixed(3)
+      : null;
+
+  const capPercent =
+    preview !== null ? (preview.cap * 100).toFixed(3) : undefined;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50">
@@ -440,16 +445,55 @@ export default function SimulatorPage() {
                         {numericWager.toFixed(2)}
                       </span>
                     </div>
+                    {preview.betType === "casino" && (
+                      <>
+                        <div className="flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-950/40 px-3 py-2">
+                          <span className="text-neutral-400">
+                            Actual Edge (1 − RTP)
+                          </span>
+                          <span className="font-mono">
+                            {casinoActualEdgePercent}%
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-md border border-amber-500/60 bg-amber-950/20 px-3 py-2">
+                          <span className="text-neutral-200">
+                            Casino Edge Cap
+                          </span>
+                          <span className="font-mono">{capPercent}%</span>
+                        </div>
+                      </>
+                    )}
+                    {preview.betType === "sports" && (
+                      <>
+                        <div className="flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-950/40 px-3 py-2">
+                          <span className="text-neutral-400">
+                            Actual Market Margin
+                          </span>
+                          <span className="font-mono">
+                            {sportsActualMarginPercent}%
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-md border border-amber-500/60 bg-amber-950/20 px-3 py-2">
+                          <span className="text-neutral-200">
+                            Sportsbook Edge Cap
+                          </span>
+                          <span className="font-mono">{capPercent}%</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-950/40 px-3 py-2">
                       <span className="text-neutral-400">Effective Edge</span>
                       <span className="font-mono">
                         {effectiveEdgePercent}%{" "}
-                        <span className="text-neutral-500">
-                          ({preview.betType === "casino"
-                            ? "max(1 - RTP, CasinoFloor)"
-                            : "max(MarketMargin, SportFloor)"}
-                          )
-                        </span>
+                        {preview.cap !== undefined &&
+                          ((preview.betType === "casino" &&
+                            preview.actualEdge > preview.cap) ||
+                            (preview.betType === "sports" &&
+                              preview.actualMargin > preview.cap)) && (
+                            <span className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                              Cap Applied
+                            </span>
+                          )}
                       </span>
                     </div>
                     <div className="flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-950/40 px-3 py-2">
@@ -473,7 +517,10 @@ export default function SimulatorPage() {
                   Casino Formula
                 </p>
                 <p className="mt-1">
-                  EffectiveEdge = max(1 − RTP, CasinoFloor)
+                  ActualEdge = 1 − RTP
+                </p>
+                <p>
+                  EffectiveEdge = min(ActualEdge, CasinoEdgeCap)
                 </p>
                 <p>
                   Rakeback = Wager × EffectiveEdge × BaseRakeback% ×
@@ -483,7 +530,10 @@ export default function SimulatorPage() {
                   Sportsbook Formula
                 </p>
                 <p className="mt-1">
-                  EffectiveEdge = max(MarketMargin, SportFloor)
+                  ActualEdge = MarketMargin
+                </p>
+                <p>
+                  EffectiveEdge = min(MarketMargin, SportsEdgeCap)
                 </p>
                 <p>
                   Rakeback = Wager × EffectiveEdge × BaseRakeback% ×

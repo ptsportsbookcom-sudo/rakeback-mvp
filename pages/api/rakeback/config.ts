@@ -1,10 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { store } from "@/lib/store";
-import type {
-  CasinoFloorConfig,
-  RakebackConfig,
-  SportFloorConfig,
-} from "@/lib/types";
+import type { RakebackConfig } from "@/lib/types";
 import { createAuditLogEntry } from "@/lib/rakeback";
 
 type ConfigResponse = {
@@ -19,8 +15,8 @@ type UpdateConfigBody = {
   enabled?: boolean;
   baseRakebackPercentage?: number;
   overrideMultiplier?: number;
-  casinoFloors?: CasinoFloorConfig[];
-  sportFloors?: SportFloorConfig[];
+  casinoEdgeCap?: number;
+  sportsEdgeCap?: number;
 };
 
 export default function handler(
@@ -57,12 +53,22 @@ export default function handler(
         store.config.overrideMultiplier = body.overrideMultiplier;
       }
 
-      if (Array.isArray(body.casinoFloors)) {
-        store.config.casinoFloors = body.casinoFloors;
+      if (typeof body.casinoEdgeCap === "number") {
+        if (body.casinoEdgeCap < 0) {
+          return res
+            .status(400)
+            .json({ error: "casinoEdgeCap must be non-negative" });
+        }
+        store.config.casinoEdgeCap = body.casinoEdgeCap;
       }
 
-      if (Array.isArray(body.sportFloors)) {
-        store.config.sportFloors = body.sportFloors;
+      if (typeof body.sportsEdgeCap === "number") {
+        if (body.sportsEdgeCap < 0) {
+          return res
+            .status(400)
+            .json({ error: "sportsEdgeCap must be non-negative" });
+        }
+        store.config.sportsEdgeCap = body.sportsEdgeCap;
       }
 
       store.config.updatedAt = updatedAt;
