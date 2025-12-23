@@ -89,7 +89,8 @@ export default function AdminConfigPage() {
     const parsed = Number.parseFloat(value);
     if (!state.config) return;
     if (!Number.isFinite(parsed) || parsed < 0) {
-      updateConfigField("overrideMultiplier", 1);
+      // For invalid or negative input, treat as 0 (rakeback off).
+      updateConfigField("overrideMultiplier", 0);
       return;
     }
     updateConfigField("overrideMultiplier", parsed);
@@ -261,7 +262,7 @@ export default function AdminConfigPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                    Override Multiplier
+                    Rakeback Multiplier
                   </label>
                   <input
                     type="number"
@@ -274,7 +275,7 @@ export default function AdminConfigPage() {
                     className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm outline-none ring-0 focus:border-emerald-500"
                   />
                   <p className="text-xs text-neutral-500">
-                    Multiplies the base rakeback (default 1.0).
+                    0 = off, 1 = normal (100%), 0.5 = half, 2 = double.
                   </p>
                 </div>
               </div>
